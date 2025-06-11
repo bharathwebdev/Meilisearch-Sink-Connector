@@ -27,3 +27,19 @@ curl -X POST http://localhost:8083/connectors \
   }'
 
 
+
+
+
+
+curl --location 'http://localhost:8083/connectors' \
+--header 'Content-Type: application/json' \
+--data '{
+  "name": "meilisearch-sink",
+  "config": {
+    "connector.class": "org.adsonly.MeilisearchSinkConnector",
+    "topics": "adsonly.public.units",
+    "meilisearch.host": "http://meilisearch:7700",
+     "meilisearch.api.key":"masterKey",
+    "meilisearch.index": "units"
+  }
+}'

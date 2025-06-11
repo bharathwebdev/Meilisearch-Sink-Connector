@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="kafka-connect-plugins">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/kafka-connect-plugins/kafka-connect-elasticsearch-15.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/kafka-connect-plugins/debezium-connector-postgres-2.4.1.Final.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
