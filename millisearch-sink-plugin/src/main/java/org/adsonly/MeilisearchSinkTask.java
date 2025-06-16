@@ -7,6 +7,8 @@ import com.meilisearch.sdk.Config;
 import com.meilisearch.sdk.Index;
 import com.meilisearch.sdk.json.JacksonJsonHandler;
 import com.meilisearch.sdk.model.TaskInfo;
+import org.apache.kafka.connect.data.Field;
+import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 
@@ -79,5 +81,18 @@ public class MeilisearchSinkTask extends SinkTask {
         logger.info("Stopping MeilisearchSinkTask...");
         client = null;
         index = null;
+    }
+
+    private Map<String, Object> convertStructToMap(Struct struct) {
+        Map<String, Object> map = new java.util.HashMap<>();
+        for (Field field : struct.schema().fields()) {
+            Object value = struct.get(field);
+            if (value instanceof org.apache.kafka.connect.data.Struct) {
+                map.put(field.name(), convertStructToMap((org.apache.kafka.connect.data.Struct) value));
+            } else {
+                map.put(field.name(), value);
+            }
+        }
+        return map;
     }
 }

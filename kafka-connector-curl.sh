@@ -9,7 +9,7 @@ curl -X POST http://localhost:8083/connectors \
       "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
       "plugin.name": "pgoutput",
       "database.hostname": "host.docker.internal",
-      "database.port": "56459",
+      "database.port": "56573",
       "database.user": "postgres",
       "database.password": "postgres",
       "database.dbname": "adsonly",
@@ -24,7 +24,7 @@ curl -X POST http://localhost:8083/connectors \
       "key.converter.schemas.enable": false,
       "value.converter.schemas.enable": false
     }
-  }'
+  }' | jq
 
 
 
@@ -42,4 +42,4 @@ curl --location 'http://localhost:8083/connectors' \
      "meilisearch.api.key":"masterKey",
     "meilisearch.index": "units"
   }
-}'
+}' | jq

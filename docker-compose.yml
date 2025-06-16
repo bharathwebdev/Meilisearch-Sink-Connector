@@ -49,7 +49,7 @@ services:
       - app-tier
 
   meilisearch:
-    image: getmeili/meilisearch:v1.2
+    image: getmeili/meilisearch:latest
     container_name: meilisearch
     restart: always
     ports:
