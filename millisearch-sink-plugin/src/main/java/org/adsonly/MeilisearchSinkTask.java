@@ -7,13 +7,10 @@ import com.meilisearch.sdk.Config;
 import com.meilisearch.sdk.Index;
 import com.meilisearch.sdk.json.JacksonJsonHandler;
 import com.meilisearch.sdk.model.TaskInfo;
-import org.apache.kafka.connect.data.Field;
-import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,53 +24,101 @@ public class MeilisearchSinkTask extends SinkTask {
     }
 
     @Override
-    public void start(Map<String, String> map) {
-        Config config = new Config(map.get(MeilisearchSinkConnectorConfig.MEILISEARCH_HOST_CONFIG), map.get(MeilisearchSinkConnectorConfig.MEILISEARCH_API_KEY_CONFIG), new JacksonJsonHandler());
-        client = new Client(config);
-        String indexName = map.get(MeilisearchSinkConnectorConfig.MEILISEARCH_INDEX_CONFIG);
+    public void start(Map<String, String> props) {
+        logger.info("Starting MeilisearchSinkTask...");
+
         try {
-            index = client.getIndex(indexName);
+            String host = props.get(MeilisearchSinkConnectorConfig.MEILISEARCH_HOST_CONFIG);
+            String apiKey = props.get(MeilisearchSinkConnectorConfig.MEILISEARCH_API_KEY_CONFIG);
+            String indexName = props.get(MeilisearchSinkConnectorConfig.MEILISEARCH_INDEX_CONFIG);
+
+            Config config = new Config(host, apiKey, new JacksonJsonHandler());
+            client = new Client(config);
+
+            // Try to get or create the index
+            try {
+                index = client.getIndex(indexName);
+            } catch (Exception e) {
+                TaskInfo task = client.createIndex(indexName, "id");
+                client.waitForTask(task.getTaskUid());
+                index = client.getIndex(indexName);
+            }
+
         } catch (Exception e) {
-            // If it doesn't exist, create it
-            TaskInfo task = client.createIndex(indexName, "id");
-
-            // Wait for the task to finish
-            client.waitForTask(task.getTaskUid());
-
-            // Now fetch the created index
-            index = client.getIndex(indexName);
+            logger.log(Level.SEVERE, "Failed to initialize Meilisearch client", e);
         }
     }
 
     @Override
-    public void put(Collection<SinkRecord> collection) {
+    public void put(Collection<SinkRecord> records) {
         ObjectMapper mapper = new ObjectMapper();
         logger.info("ENTERED PUT-------->");
-        for (SinkRecord record : collection) {
+        List<JsonNode> docsToIndex = new ArrayList<>();
+        List<String> docsToDelete = new ArrayList<>();
+
+        for (SinkRecord record : records) {
             try {
-                String value = record.value().toString();
-                logger.info("EVENT DATA ------>");
-                logger.log(Level.INFO,value);
-                JsonNode event = mapper.convertValue(record.value(), JsonNode.class);
-                String op = event.get("op").asText();
+                @SuppressWarnings("unchecked")
+                Map<String, Object> valueMap = (Map<String, Object>) record.value();
+                JsonNode event = mapper.convertValue(valueMap, JsonNode.class);
 
-                if ("c".equals(op) || "u".equals(op)) {
-                    String doc = mapper.writeValueAsString(event.get("after"));
-
-                    doc = "["+doc+"]";
-
-                    logger.info("DATA GETTING INSERTED-------->");
-                    logger.info(doc);
-
-                    index.addDocuments(doc);
-                } else if ("d".equals(op)) {
-                    String id = event.get("before").get("id").asText();
-                    index.deleteDocument(id);
+                JsonNode opNode = event.get("op");
+                if (opNode == null) {
+                    logger.warning("Missing 'op' field in record: " + event);
+                    continue;
                 }
+
+                String op = opNode.asText();
+                logger.info("Operation type: " + op);
+
+                switch (op) {
+                    case "c":
+                    case "u":
+                    case "r": {
+                        JsonNode afterNode = event.get("after");
+                        if (afterNode == null || afterNode.isNull()) {
+                            logger.warning("Missing 'after' field for op: " + op + ", event: " + event);
+                            continue;
+                        }
+                        docsToIndex.add(afterNode);
+                        break;
+                    }
+                    case "d": {
+                        JsonNode beforeNode = event.get("before");
+                        if (beforeNode == null || beforeNode.isNull() || beforeNode.get("id") == null) {
+                            logger.warning("Missing 'before.id' field for delete event: " + event);
+                            continue;
+                        }
+                        String id = beforeNode.get("id").asText();
+                        docsToDelete.add(id);
+                        break;
+                    }
+                    default:
+                        logger.warning("Unsupported operation: " + op);
+                }
+
             } catch (Exception e) {
-                logger.log(Level.SEVERE, "Error processing record", e);
+                logger.log(Level.SEVERE, "Error parsing record", e);
             }
         }
+
+        try {
+            if (!docsToIndex.isEmpty()) {
+                String jsonPayload = mapper.writeValueAsString(docsToIndex);
+                logger.info("Indexing " + docsToIndex.size() + " documents");
+                index.addDocuments(jsonPayload);
+            }
+
+            if (!docsToDelete.isEmpty()) {
+                logger.info("Deleting " + docsToDelete.size() + " documents");
+                String[] ids = docsToDelete.toArray(new String[0]);
+                index.deleteDocuments(Arrays.asList(ids));
+            }
+
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error while syncing to Meilisearch", e);
+        }
+
     }
 
     @Override
@@ -83,16 +128,4 @@ public class MeilisearchSinkTask extends SinkTask {
         index = null;
     }
 
-    private Map<String, Object> convertStructToMap(Struct struct) {
-        Map<String, Object> map = new java.util.HashMap<>();
-        for (Field field : struct.schema().fields()) {
-            Object value = struct.get(field);
-            if (value instanceof org.apache.kafka.connect.data.Struct) {
-                map.put(field.name(), convertStructToMap((org.apache.kafka.connect.data.Struct) value));
-            } else {
-                map.put(field.name(), value);
-            }
-        }
-        return map;
-    }
 }
