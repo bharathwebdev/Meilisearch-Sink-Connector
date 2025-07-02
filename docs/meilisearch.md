@@ -84,7 +84,7 @@ meilisearch.index=products-index
 1. Build the connector JAR with Gradle:
 
 ```bash
-./gradlew clean build
+maven clean build
 ```
 
 2. Copy the JAR to your Kafka Connect plugin path.

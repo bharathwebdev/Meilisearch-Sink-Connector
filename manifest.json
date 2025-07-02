@@ -1,0 +1,22 @@
+{
+  "name": "Kafka Meilisearch Sink Connector",
+  "owner": {
+    "name": "Bharath S"
+  },
+  "version": "1.0.0",
+  "title": "Kafka Sink Connector for Meilisearch",
+  "description": "Streams data from Kafka topics to Meilisearch in real-time with support for Debezium CDC format.",
+  "license": "MIT",
+  "component_types": ["sink"],
+  "release_date": "2025-07-02",
+  "support": {
+    "summary": "Community support on GitHub issues",
+    "url": "https://github.com/bharathwebdev/Meilisearch-Sink-Connector"
+  },
+  "documentation_url": "https://github.com/bharathwebdev/Meilisearch-Sink-Connector",
+  "source_url": "https://github.com/bharathwebdev/Meilisearch-Sink-Connector",
+  "docker_image": "",
+  "topics": ["meilisearch", "search", "cdc", "sink"],
+  "schema_validation": "none",
+  "component_class": "org.adsonly.MeilisearchSinkConnector"
+}

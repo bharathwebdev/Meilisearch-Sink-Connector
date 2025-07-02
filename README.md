@@ -15,17 +15,36 @@ This is a custom **Apache Kafka Sink Connector** that streams data from Kafka to
 - Apache Kafka + Kafka Connect
 - Meilisearch 1.0+
 - Java 8+
-- maven
+- Gradle or JAR built with it
+
+## ⚙️ Configuration
+
+Create a connector config file (e.g. `meilisearch-connector.properties`) with the following contents:
+
+```properties
+name=meilisearch-sink-connector
+connector.class=org.adsonly.MeilisearchSinkConnector
+tasks.max=1
+topics=my-topic
+
+meilisearch.host=http://localhost:7700
+meilisearch.apiKey=your-meilisearch-api-key
+meilisearch.index=my-index
+```
 
 ## 📦 Build
 
-Use maven to build the connector:
+Use Gradle to build the connector:
 
 ```bash
-mvn clean build
+./gradlew clean build
 ```
 
+This will generate a JAR file at:
 
+```
+build/libs/meilisearch-sink-connector-1.0.jar
+```
 
 ## 🚀 Deploy the Connector
 
@@ -42,6 +61,7 @@ curl -X POST http://localhost:8083/connectors \
   "name": "meilisearch-sink-connector",
   "config": {
     "connector.class": "org.adsonly.MeilisearchSinkConnector",
+    "tasks.max": "1",
     "topics": "my-topic",
     "meilisearch.host": "http://localhost:7700",
     "meilisearch.apiKey": "your-meilisearch-api-key",
@@ -101,11 +121,12 @@ The task uses Java `Logger`. You can configure logging level via the Connect wor
 | `meilisearch.host`    | URL to Meilisearch server                    | ✅ Yes       |
 | `meilisearch.apiKey`  | Meilisearch API key (optional if public)     | ❌ Optional  |
 | `meilisearch.index`   | Meilisearch index name                       | ✅ Yes       |
-
+| `topics`              | Kafka topics to subscribe to                 | ✅ Yes       |
+| `tasks.max`           | Max parallel tasks                           | ✅ Yes       |
 
 ## 🤝 Contributing
 
-Pull requests are welcome! Please include tests and make sure it builds via maven.
+Pull requests are welcome! Please include tests and make sure it builds via Gradle.
 
 ## 📄 License
 
