@@ -9,11 +9,11 @@ curl -X POST http://localhost:8083/connectors \
       "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
       "plugin.name": "pgoutput",
       "database.hostname": "host.docker.internal",
-      "database.port": "56573",
+      "database.port": "51133",
       "database.user": "postgres",
       "database.password": "postgres",
       "database.dbname": "adsonly",
-      
+      "snapshot.mode": "initial",
       "database.server.name": "adsonly_server",
       "table.include.list": "public.units", 
       "topic.prefix": "adsonly",
