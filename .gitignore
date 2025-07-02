@@ -34,9 +34,9 @@ build/
 ### VS Code ###
 .vscode/
 
-kafka-connect-plugins
+/kafka-connect-plugins/
 
-docker-compose.yaml
-kafka-connector-curl.sh
+/docker-compose.yaml
+/kafka-connector-curl.sh
 ### Mac OS ###
 .DS_Store
